@@ -1,0 +1,27 @@
+task:
+  name: "binary-classification"
+  metrics:
+    train: ["loss", "accuracy"]
+    eval: ["accuracy", "precision", "recall", "f1-score"]
+  log:
+    log_step: 100
+    log_dir: "./task/rusted_classification/logs"
+    save: "./task/rusted_classification/ckpts"
+
+data:
+  format: "flow_from_directory"
+  source: "PATH-TO-Rusted-images"
+  image_size: 256
+
+model:
+  module: "models.classifiers.resnet.BinaryResnet"
+  pretrain: None
+  optimizer:
+    module: "torch.optim.Adam"
+    lr: 1e-3
+    scheduler: 
+      module: "torch.optim.lr_scheduler.ReduceLROnPlateau"
+      patience: 5
+      factor: 0.15
+  save: "./task/rusted_classification/ckpts"
+    
