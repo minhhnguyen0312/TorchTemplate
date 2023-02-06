@@ -3,13 +3,12 @@ import torch.nn as nn
 from ..model import BaseModel
 
 class BaseClassifierModel(BaseModel):
-    def __init__(self):
-        super(BaseClassifierModel, self).__init__()
-
-    def initialize(self):
-        self.optimizer = torch.optim.Adam(self.parameters())
-        self.lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer)
+    def __init__(self, config, opt_mod, sch_mod):
+        super(BaseClassifierModel, self).__init__(config, opt_mod, sch_mod)
     
+    # def initialize(self):
+    #     super().initialize()
+
     def train_step(self, batch, i):
         batch = self.cast_inputs(batch)
         pred = self(batch['images'])

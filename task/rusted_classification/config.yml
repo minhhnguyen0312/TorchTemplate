@@ -10,18 +10,20 @@ task:
 
 data:
   format: "flow_from_directory"
-  source: "PATH-TO-Rusted-images"
+  source: "src/rusted_bolt"
   image_size: 256
 
 model:
-  module: "models.classifiers.resnet.BinaryResnet"
+  module: "models.classifiers.binary.resnet.ResnetBinary" # model arch
   pretrain: None
   optimizer:
-    module: "torch.optim.Adam"
-    lr: 1e-3
+    module: "torch.optim.Adam" # optimizer module
+    lr: 0.001
     scheduler: 
-      module: "torch.optim.lr_scheduler.ReduceLROnPlateau"
+      module: "torch.optim.lr_scheduler.ReduceLROnPlateau" # Lr scheduler module
       patience: 5
       factor: 0.15
+  criterion: BCELoss # Model criterion
   save: "./task/rusted_classification/ckpts"
+  taskname: "rusted_classification"
     
