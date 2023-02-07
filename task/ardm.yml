@@ -1,0 +1,14 @@
+task:
+  name: "data-synthesis"
+ 
+data:
+  source: "path-to-images"
+  image_size: 512
+
+model:
+  module: "models.diffusers.ardm.AutoregresiveDiffusion"
+  optimizer:
+    module: "torch.optim.Adam"
+    lr: 0.0006
+    scheduler:
+      module: None
