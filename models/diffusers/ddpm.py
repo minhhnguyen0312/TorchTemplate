@@ -89,14 +89,10 @@ class DDPM(BaseModel):
         return posterior_mean, posterior_variance, posterior_log_variance_clipped
 
     def predict_start_from_noise(self, x_t, t, noise=None):
-        """ Compute mu_theta(x_{t-1} | x_t) 
-        = 1/sqrt(a_cump_t) * x_t - beta_t/sqrt(a_cump_t * (1-a_cump_t)) * e_theta
-        Inputs:
-            x_t
-            t = time step
-            noise = e_theta
-        Output:
-            mu_theta(x_{t-1} | x_t)
+        """ Predict x_0 from x_t, t
+        returns:
+            x_0_hat = x_t/sqrt(a_cump) - noise * sqrt(1/a_cump - 1)
+        Note that x_t = sqrt(a_cump) * x_0 + noise / sqrt(1 - a_cump)
         """
         return (
             extract(self.sqrt_recip_alphas_cumprod, t, x_t.shape) * x_t -
