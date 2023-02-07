@@ -18,8 +18,6 @@ class BaseDataset(Dataset):
     def __len__(self):
         return len(self.items)
 
-    def getitem(self):
-        pass
 
 class BaseInput:
     def __init__(self):
