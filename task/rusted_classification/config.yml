@@ -9,8 +9,9 @@ task:
     save: "./task/rusted_classification/ckpts"
 
 data:
-  format: "flow_from_directory"
-  source: "src/rusted_bolt"
+  format: "flow_from_directory" # Format
+  source: "src/rusted_bolt" # Path to data
+  num_classes: 2
   image_size: 256
 
 model:
