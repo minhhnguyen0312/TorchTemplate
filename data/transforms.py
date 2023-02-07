@@ -1,14 +1,15 @@
-from torchvision import transform as T
-import albumentation as A
+from torchvision import transforms as T
+import albumentations as A
+
 
 class Transform:
     def __init__(self, config):
         self.ops = []
-    
-    def apply(self, input):
+
+    def apply(self, inputs):
         for op in self.ops:
-            input = op(input)
-        return input
-    
-    def __call__(self, input):
-        return self.apply(input)
+            inputs = op(inputs)
+        return inputs
+
+    def __call__(self, inputs):
+        return self.apply(inputs)
