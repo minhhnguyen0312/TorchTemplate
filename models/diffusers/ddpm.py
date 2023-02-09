@@ -228,4 +228,4 @@ class DDPM(BaseModel):
     def eval_step(self, batch, i):
         n_sample = batch['images'].shape[0]
         return self.sample(n_sample)
-
+    

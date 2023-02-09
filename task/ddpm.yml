@@ -1,0 +1,33 @@
+task:
+  name: "denoising-diffusion"
+  metrics:
+    train: ["loss"]
+    eval: []
+  log:
+    log_step: 100
+    log_dir: "./task/rusted_classification/logs"
+    save: "./task/rusted_classification/ckpts"
+
+data:
+  format: "flow_from_directory" # Format
+  source: "src/rusted_bolt" # Path to data
+  num_classes: 2
+  image_size: 256
+
+model:
+  module: "models.diffusers.ddpm.DDPM" # model arch
+  pretrain: None
+  max_steps: 1000
+  beta_start: 0.
+  beta_end: 1.
+  optimizer:
+    module: "torch.optim.Adam" # optimizer module
+    lr: 0.001
+    scheduler: 
+      module: "torch.optim.lr_scheduler.ReduceLROnPlateau" # Lr scheduler module
+      patience: 5
+      factor: 0.15
+  criterion: BCELoss # Model criterion
+  save: "./task/rusted_classification/ckpts"
+  taskname: "rusted_classification"
+    
