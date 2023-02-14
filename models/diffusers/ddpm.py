@@ -221,7 +221,9 @@ class DDPM(BaseModel):
     def train_step(self, batch, i):
         batch = self.cast_inputs(batch)
         loss = self(batch['images'])
+        self.optimizer.zero_grad()
         loss.backward()
+        self.optimizer.step()
         return loss
     
     @torch.no_grad()

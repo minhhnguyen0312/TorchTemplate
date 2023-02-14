@@ -1,22 +1,52 @@
 import os
+import torch
 from utils.args import PythonParser, YmlParser
 from models import build_model_from_config
+from data import build_data_from_config
+from tqdm import tqdm
 
 class BaseTrainer:
     def __init__(self):
         self.model = None
         self.trn_data = None
         self.val_data = None
+        self.config = "None"
         self.initialize()
     
     def initialize(self):
         raise NotImplementedError
 
-    def fit(self, num_epochs=5, train_steps=None, train_on_steps=False):
+    def fit(self, num_epochs=10, train_steps=100000, train_on_steps=False):
         if not train_on_steps:
             for i in range(num_epochs):
                 self.model.train_one_epoch(self.trn_data, i)
                 self.val_data.train_one_epoch(self.val_data, i)
+        else:
+            steps = 0
+            with tqdm(initial=steps, total=train_steps) as pbar:
+                while steps < train_steps:
+                    total_loss = 0.
+                    data = next(self.trn_data)
+                    loss = self.model.train_step(data, steps)
+                    total_loss += loss.item()
+
+                    pbar.set_description(f'loss: {total_loss:.4f}')
+                    steps += 1
+
+                    if steps != 0 and steps % self.config['log_step'] == 0:
+                        self.ema.ema_model.eval()
+
+                        with torch.no_grad():
+                            milestone = steps // self.config['log_step']
+                            all_images_list = list(map(lambda n: self.model.sample(batch_size=n), 16))
+
+                        all_images = torch.cat(all_images_list, dim = 0)
+                        # utils.save_image(all_images, str(self.results_folder / f'sample-{milestone}.png'), nrow = int(math.sqrt(self.num_samples)))
+                        self.save(milestone)
+
+                    pbar.update(1)
+    def save(self, milestone):
+        pass
 
 
 class TrainerYml(BaseTrainer):
@@ -32,9 +62,10 @@ class TrainerYml(BaseTrainer):
     
     def initialize_model(self):
         self.model = build_model_from_config(self.config['model'])
-    
+
     def initialize_data(self):
-        pass
+        self.trn_data, self.val_data = build_data_from_config(self.config['data'])
+
 
 class Trainer(object):
     def __init__(
@@ -153,7 +184,8 @@ class Trainer(object):
 
                 for _ in range(self.gradient_accumulate_every):
                     data = next(self.dl).to(device)
-
+                    
+                    # Train step
                     with self.accelerator.autocast():
                         loss = self.model(data)
                         loss = loss / self.gradient_accumulate_every
@@ -191,3 +223,11 @@ class Trainer(object):
                 pbar.update(1)
 
         accelerator.print('training complete')
+
+
+class DiffusionTrainerv2:
+    def __init__(self):
+        self.accelerator = None # Optional for mixed precision
+    
+        self.model = None
+        self.train_data = None
