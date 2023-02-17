@@ -32,17 +32,20 @@ class Discriminator(nn.Module):
         return x
 
 class BaseGAN(BaseModel):
-    def __init__(self, config):
+    def __init__(self, config, opt_mod, sch_mod):
         super(BaseGAN, self).__init__(config)
-        self.gen = self.build_generator()
-        self.disc = self.build_disc()
+        self.gen, self.gen_optimizer = self.build_generator()
+        self.disc, self.disc_optimizer = self.build_discriminator()
     
     def build_generator(self):
         gen = SimpleGenerator()
-        return gen
+        optimizer = self.opt_mod(gen.parameters(), lr=0.001)
+        return gen, optimizer
 
     def build_discriminator(self):
-        pass
+        disc = Discriminator()
+        optimizer = self.opt_mod(disc.parameters(), lr=0.001)
+        return disc, optimizer
 
     def train_step(self, batch, step):
         disc_loss = self.train_disc_step(batch)
