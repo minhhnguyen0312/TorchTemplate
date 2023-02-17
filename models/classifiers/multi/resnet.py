@@ -4,8 +4,8 @@ from torchvision.models import resnet18
 from ..base_model import BaseClassifierModel
 
 class ResnetBinary(BaseClassifierModel):
-    def __init__(self, config, opt_mod, sch_mod):
-        super(ResnetBinary, self).__init__(config, opt_mod, sch_mod)
+    def __init__(self, config):
+        super(ResnetBinary, self).__init__(config)
         self.model = resnet18()
         self.num_classes = config['num_classes']
         self.classifier = nn.Linear(1000, self.num_classes)

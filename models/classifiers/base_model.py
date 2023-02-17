@@ -3,8 +3,8 @@ import torch.nn as nn
 from ..model import BaseModel
 
 class BaseClassifierModel(BaseModel):
-    def __init__(self, config, opt_mod, sch_mod):
-        super(BaseClassifierModel, self).__init__(config, opt_mod, sch_mod)
+    def __init__(self, config):
+        super(BaseClassifierModel, self).__init__(config)
     
     # def initialize(self):
     #     super().initialize()

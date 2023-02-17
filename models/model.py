@@ -4,16 +4,19 @@ import torch
 import torch.nn as nn
 
 class BaseModel(nn.Module):
-    def __init__(self, config, opt_mod, sch_mod):
+    def __init__(self, config):
         super(BaseModel, self).__init__()
         self.config = config
-        self.opt_mod = opt_mod
-        self.sch_mod = sch_mod
     
     def initialize(self):
-        self.optimizer = self.opt_mod(self.parameters(), lr=self.config['optimizer']['lr'])
-        sch_config = self.config['optimizer']['scheduler']
-        self.lr_scheduler = self.sch_mod(self.optimizer, patience=sch_config['patience'], factor=sch_config['factor'])
+        if self.config['optimizer']['module'] == 'sgd':
+            optmod = torch.optim.SDG
+        else:
+            optmod = torch.optim.Adam
+        opt_config = self.config['optimizer']
+        self.optimizer = torch.optim.Adam(self.parameters(), lr=opt_config['lr'])
+        sch_config = opt_config['scheduler']
+        self.lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, patience=sch_config['patience'], factor=sch_config['factor'])
     
     def cast_inputs(self, inputs):
         casted_inputs = {}
