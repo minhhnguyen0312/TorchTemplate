@@ -4,7 +4,7 @@ import torch.nn as nn
 from ..model import BaseModel
 
 class SimpleGenerator(nn.Module):
-    def __init__(self):
+    def __init__(self, config):
         super(SimpleGenerator, self).__init__()
         self.fc1 = nn.Linear(100, 256)
         self.fc2 = nn.Linear(256, 784)
@@ -18,7 +18,7 @@ class SimpleGenerator(nn.Module):
 
 # Define the discriminator network
 class Discriminator(nn.Module):
-    def __init__(self):
+    def __init__(self, config):
         super(Discriminator, self).__init__()
         self.fc1 = nn.Linear(784, 256)
         self.fc2 = nn.Linear(256, 64)
@@ -34,17 +34,28 @@ class Discriminator(nn.Module):
 class BaseGAN(BaseModel):
     def __init__(self, config):
         super(BaseGAN, self).__init__(config)
-        self.gen, self.gen_optimizer = self.build_generator()
-        self.disc, self.disc_optimizer = self.build_discriminator()
+        self.initialize()
     
-    def build_generator(self):
-        gen = SimpleGenerator()
-        optimizer = self.opt_mod(gen.parameters(), lr=0.001)
+    def initialize(self):
+        self.device = 'cpu'
+        self.criterion = nn.BCELoss()
+        gen_config = self.config['generator']
+        disc_config = self.config['discriminator']
+        self.gen, self.gen_optimizer = self.build_generator(gen_config)
+        self.disc, self.disc_optimizer = self.build_discriminator(disc_config)
+
+    def build_generator(self, config):
+        opt_config = config['optimizer']
+        gen_opt_mod = torch.optim.Adam
+        gen = SimpleGenerator(config)
+        optimizer = gen_opt_mod(gen.parameters(), lr=opt_config['lr'])
         return gen, optimizer
 
-    def build_discriminator(self):
-        disc = Discriminator()
-        optimizer = self.opt_mod(disc.parameters(), lr=0.001)
+    def build_discriminator(self, config):
+        opt_config = config['optimizer']
+        disc_opt_mod = torch.optim.Adam
+        disc = Discriminator(config)
+        optimizer = disc_opt_mod(disc.parameters(), lr=opt_config['lr'])
         return disc, optimizer
 
     def train_step(self, batch, step):
@@ -56,14 +67,15 @@ class BaseGAN(BaseModel):
         }
     
     def train_disc_step(self, batch):
+        # print(batch[0].shape)
         self.gen.eval()
         self.disc.train()
-        self.disc.optimizer.zero_grad()
+        self.disc_optimizer.zero_grad()
         real = batch['image']
         b, w, h, c = real.shape
-        real_label = torch.ones((b,))
+        real_label = torch.ones((b, 1))
         fake = self.sample(n_sample=b, cond=batch, grad=True)
-        fake_label = torch.zeros((b,))
+        fake_label = torch.zeros((b, 1))
         
         real_loss = self.get_disc_loss(real, real_label)
         fake_loss = self.get_disc_loss(fake, fake_label)
@@ -73,17 +85,18 @@ class BaseGAN(BaseModel):
         self.disc_optimizer.step()
     
     def train_gen_step(self, batch):
+        # print(batch)
         self.gen.train()
         self.disc.eval()
         self.gen_optimizer.zero_grad()
         real = batch['image']
         b, w, h, c = real.shape
         fake = self.sample(n_sample=b, cond=batch, grad=True)
-        fake_real_label = torch.ones((b,))
+        fake_real_label = torch.ones((b, 1))
         
         gen_loss = self.get_disc_loss(fake, fake_real_label)
         gen_loss.backward()
-        self.gen.optimizer.step()
+        self.gen_optimizer.step()
 
     def sample(self, n_sample, cond=None, grad=True):
         noise = torch.randn(n_sample, 100, device=self.device)

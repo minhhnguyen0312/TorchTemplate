@@ -20,7 +20,7 @@ class BaseTrainer:
         if not train_on_steps:
             for i in range(num_epochs):
                 self.model.train_one_epoch(self.trn_data, i)
-                self.val_data.train_one_epoch(self.val_data, i)
+                self.model.eval_one_epoch(self.val_data, i)
         else:
             steps = 0
             with tqdm(initial=steps, total=train_steps) as pbar:

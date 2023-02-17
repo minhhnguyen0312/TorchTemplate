@@ -35,7 +35,8 @@ class BaseModel(nn.Module):
             t.set_description(f"Training {epoch}:")
             for i, batch in enumerate(t):
                 outputs = self.train_step(batch, i)
-                self.writer.update(outputs, isval=False)
+                if self.config['log']:
+                    self.writer.update(outputs, isval=False)
     
     def eval_one_epoch(self, data, epoch):
         self.eval()
@@ -43,7 +44,8 @@ class BaseModel(nn.Module):
             t.set_description(f"Validating {epoch}:")
             for i, batch in enumerate(t):
                 outputs = self.eval_step(batch, i)
-                self.writer.update(outputs, ival=True)
+                if self.config['log']:
+                    self.writer.update(outputs, ival=True)
 
     def save(self):
         filepath = f"{self.config['save']}/{self.config['taskname']}/latest.pt"

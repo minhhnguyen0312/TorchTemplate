@@ -1,0 +1,42 @@
+task:
+  name: "gan-mnist"
+  metrics:
+    train: ["loss"]
+    eval: []
+  log:
+    log_step: 100
+    log_dir: "./task/gan-mnist/logs"
+    save: "./task/gan-mnist/ckpts"
+
+data:
+  format: "mnist" # Format
+  source: "mnist" # Path to data
+  image_size: 28
+
+model:
+  module: "models.gans.model.BaseGAN" # model arch
+  generator:
+    module: None
+    pretrain: None
+    max_steps: 1000
+    optimizer:
+      module: "adam" # optimizer module
+      lr: 0.001
+      scheduler: 
+        module: "ReduceLROnPlateau" # Lr scheduler module
+        patience: 5
+        factor: 0.
+  discriminator:
+    module: None
+    pretrain: None
+    optimizer:
+      module: "adam" # optimizer module
+      lr: 0.001
+      scheduler: 
+        module: "ReduceLROnPlateau" # Lr scheduler module
+        patience: 5
+        factor: 0.
+  log: False
+  criterion: BCELoss # Model criterion
+  save: "./task/gan-mnist/ckpts/"
+  taskname: "gan-mnist"
