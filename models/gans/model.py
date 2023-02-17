@@ -83,6 +83,7 @@ class BaseGAN(BaseModel):
 
         total_loss.backward()
         self.disc_optimizer.step()
+        return total_loss
     
     def train_gen_step(self, batch):
         # print(batch)
@@ -97,11 +98,17 @@ class BaseGAN(BaseModel):
         gen_loss = self.get_disc_loss(fake, fake_real_label)
         gen_loss.backward()
         self.gen_optimizer.step()
-
-    def sample(self, n_sample, cond=None, grad=True):
+        return gen_loss
+    
+    def sample(self, n_sample, cond=None, grad=False):
         noise = torch.randn(n_sample, 100, device=self.device)
-        fake = self.gen(noise)
+        if not grad:
+            with torch.no_grad():
+                fake = self.gen(noise)
+        else:
+            fake = self.gen(noise)
         return fake
+
     
     def get_disc_loss(self, x, y):
         pred = self.disc(x)
