@@ -1,5 +1,6 @@
 task:
   name: "gan-mnist"
+  categories: "generative" # [generative, predictive - involve detection, segmentation blah blah]
   metrics:
     train: ["loss"]
     eval: []
@@ -11,7 +12,14 @@ task:
 data:
   format: "mnist" # Format
   source: "mnist" # Path to data
-  image_size: 28
+  train:
+    batch_size: 16
+    image_size: 28
+    num_workers: 4
+    policy: default
+  validation:
+    batch_size: 4
+    image_size: 28
 
 model:
   module: "models.gans.model.BaseGAN" # model arch
