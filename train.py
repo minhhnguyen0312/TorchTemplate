@@ -46,7 +46,7 @@ class BaseTrainer:
 
                     pbar.update(1)
     def save(self, milestone):
-        pass
+        self.model.save()
 
 
 class TrainerYml(BaseTrainer):
