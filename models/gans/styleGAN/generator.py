@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import math
 
 class WSLinear(nn.Module):
@@ -89,7 +90,7 @@ class GenBlock(nn.Module):
         return x
 
 class StyleGenerator(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config, latent_dim, constant_dim, image_dim):
         super(StyleGenerator, self).__init__()
         self.config = config
         self.latent_dim = config['latent_dim']
@@ -100,7 +101,7 @@ class StyleGenerator(nn.Module):
         self.num_blocks = int(math.log2(self.image_size / 4))
 
         # Initialize Image
-        self.constant_img = nn.Parameter(torch.ones((1, 3, self.constant, 4)))
+        self.constant_img = nn.Parameter(torch.ones((1, 3, self.constant_dim, 4)))
         self.adain1 = AdaIN(self, self.constant_dim, self.latent_dim)
         self.adain2 = AdaIN(self, self.constant_dim, self.latent_dim)
         self.initial_noise1 = NoiseInjection(self.constant_dim)
@@ -111,8 +112,9 @@ class StyleGenerator(nn.Module):
         # Body
         self.style = MLPStyle()
         self.gen = nn.ModuleList([
-            GenBlock(self.latent_dim, self.latent_dim) for i in range(config['num_block'])
+            GenBlock(self.latent_dim / 2 ** (i), self.latent_dim / 2 ** (i + 1), self.latent_dim) for i in range(config['num_block'])
         ])
+        self.gen.add_module("rgb_layer", nn.Conv2d(self.latent_dim / 2 ** self.num_blocks, self.image_dim, kernel_size=1, stride=1, padding=0))
     
     def get_latent_code(self, n_samples):
         noise = torch.randn((self.latent_dim, n_samples))
@@ -126,4 +128,17 @@ class StyleGenerator(nn.Module):
     
     def forward(self, latent):
         w = latent
+        x = self.constant_img
+        x = self.initial_noise1(x)
+        x = self.adain1(x, w)
+        x = self.leaky(self.initial_conv(x))
+        x = self.initial_noise2(x)
+        out = self.adain2(x, w)
+
+        for i, module in enumerate(self.gen):
+            # Image size: 4 * 2**(i+1)
+            # Channel: 
+            upscaled = F.interpolate(out, scale_factor=2, mode='bilinear')
+            out = module(upscaled)
+        return out
         
