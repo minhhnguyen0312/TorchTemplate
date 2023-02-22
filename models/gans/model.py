@@ -32,11 +32,11 @@ class Discriminator(nn.Module):
         return x
 
 class BaseGAN(BaseModel):
-    def __init__(self, config):
+    def __init__(self, config, **kwargs):
         super(BaseGAN, self).__init__(config)
-        self.initialize()
+        self.initialize(**kwargs)
     
-    def initialize(self):
+    def initialize(self, **kwargs):
         self.device = 'cpu'
         self.criterion = nn.BCELoss()
         gen_config = self.config['generator']
@@ -77,8 +77,9 @@ class BaseGAN(BaseModel):
         fake = self.sample(n_sample=b, cond=batch, grad=True)
         fake_label = torch.zeros((b, 1))
         
-        real_loss = self.get_disc_loss(real, real_label)
+        # real_loss = self.get_disc_loss(real, real_label)
         fake_loss = self.get_disc_loss(fake, fake_label)
+        real_loss = real_loss
         total_loss = (real_loss + fake_loss) / 2
 
         total_loss.backward()
@@ -101,17 +102,17 @@ class BaseGAN(BaseModel):
         return gen_loss
     
     def sample(self, n_sample, cond=None, grad=False):
-        noise = torch.randn(n_sample, 100, device=self.device)
+        noise = torch.randn(n_sample, self.config['generator']['latent_dim'], device=self.device)
         if not grad:
             with torch.no_grad():
-                fake = self.gen(noise)
+                fake = self.gen(noise, depth=0, alpha=0)
         else:
-            fake = self.gen(noise)
+            fake = self.gen(noise, depth=0, alpha=0)
         return fake
 
     
     def get_disc_loss(self, x, y):
-        pred = self.disc(x)
+        pred = self.disc(x, depth=0)
         return self.criterion(pred, y)
     
     def eval_step(self, batch, step):

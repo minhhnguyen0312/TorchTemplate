@@ -3,7 +3,7 @@ import torch.nn as nn
 from ..model import BaseModel
 
 class BaseClassifierModel(BaseModel):
-    def __init__(self, config):
+    def __init__(self, config, **kwargs):
         super(BaseClassifierModel, self).__init__(config)
     
     # def initialize(self):

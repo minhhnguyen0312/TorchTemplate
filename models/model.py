@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 
 class BaseModel(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config, **kwargs):
         super(BaseModel, self).__init__()
         self.config = config
     

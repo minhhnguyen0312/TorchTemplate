@@ -23,7 +23,7 @@ Recall: DDPM contains 2 opposite Gaussian Markov chains
 """
 
 class DDPM(BaseModel):
-    def __init__(self, config):
+    def __init__(self, config, **kwargs):
         super(DDPM, self).__init__(config)
         self.model = UNet2DConditionModel()
         self.scheduler = DDPMScheduler(
