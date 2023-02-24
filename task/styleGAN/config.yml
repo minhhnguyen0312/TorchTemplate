@@ -1,0 +1,60 @@
+task:
+  name: "gan-mnist"
+  categories: "generative" # [generative, predictive - involve detection, segmentation blah blah]
+  metrics:
+    train: ["loss"]
+    eval: []
+  log:
+    log_step: 100
+    log_dir: "./task/gan-mnist/logs"
+    save: "./task/gan-mnist/ckpts"
+
+data:
+  format: "mnist" # Format
+  source: "mnist" # Path to data
+  train:
+    batch_size: 16
+    image_size: 128
+    num_workers: 4
+    policy: default
+  validation:
+    batch_size: 4
+    image_size: 128
+
+model:
+  module: "models.gans.styleGAN.StyleGAN2" # model arch
+  loss_module: models.gans.losses.GANLoss
+  generator:
+    pretrain: None
+    structure: fixed
+    resolution: 128
+    latent_dim: 512
+    dlatent_dim: 512
+    conditional: False
+    n_classes: 0
+    optimizer:
+      module: "adam" # optimizer module
+      lr: 0.001
+      scheduler: 
+        module: "ReduceLROnPlateau" # Lr scheduler module
+        patience: 5
+        factor: 0.
+  discriminator:
+    module: None
+    pretrain: None
+    num_channels: 3
+    resolution: 128
+    structure: fixed
+    conditional: False
+    n_classes: 0
+    optimizer:
+      module: "adam" # optimizer module
+      lr: 0.001
+      scheduler: 
+        module: "ReduceLROnPlateau" # Lr scheduler module
+        patience: 5
+        factor: 0.
+  log: False
+  criterion: BCELoss # Model criterion
+  save: "./task/gan-mnist/ckpts/"
+  taskname: "gan-mnist"
