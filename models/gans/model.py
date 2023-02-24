@@ -79,7 +79,7 @@ class BaseGAN(BaseModel):
         
         # real_loss = self.get_disc_loss(real, real_label)
         fake_loss = self.get_disc_loss(fake, fake_label)
-        real_loss = real_loss
+        real_loss = fake_loss
         total_loss = (real_loss + fake_loss) / 2
 
         total_loss.backward()
