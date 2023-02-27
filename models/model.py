@@ -4,9 +4,10 @@ import torch
 import torch.nn as nn
 
 class BaseModel(nn.Module):
-    def __init__(self, config, **kwargs):
+    def __init__(self, config, device='cuda', **kwargs):
         super(BaseModel, self).__init__()
         self.config = config
+        self.device = device
     
     def initialize(self):
         if self.config['optimizer']['module'] == 'sgd':
@@ -22,6 +23,7 @@ class BaseModel(nn.Module):
         casted_inputs = {}
         for k, v in inputs.items():
             casted_inputs[k] = v.to(self.device)
+        return casted_inputs
 
     def train_step(self, batch, step):
         raise NotImplementedError

@@ -33,11 +33,11 @@ class Discriminator(nn.Module):
 
 class BaseGAN(BaseModel):
     def __init__(self, config, **kwargs):
-        super(BaseGAN, self).__init__(config)
+        super(BaseGAN, self).__init__(config, **kwargs)
         self.initialize(**kwargs)
     
     def initialize(self, **kwargs):
-        self.device = 'cpu'
+        # self.device = 'cpu'
         self.criterion = nn.BCELoss()
         gen_config = self.config['generator']
         disc_config = self.config['discriminator']
@@ -48,6 +48,7 @@ class BaseGAN(BaseModel):
         opt_config = config['optimizer']
         gen_opt_mod = torch.optim.Adam
         gen = SimpleGenerator(config)
+        gen.to(self.device)
         optimizer = gen_opt_mod(gen.parameters(), lr=opt_config['lr'])
         return gen, optimizer
 
@@ -55,10 +56,12 @@ class BaseGAN(BaseModel):
         opt_config = config['optimizer']
         disc_opt_mod = torch.optim.Adam
         disc = Discriminator(config)
+        disc.to(self.device)
         optimizer = disc_opt_mod(disc.parameters(), lr=opt_config['lr'])
         return disc, optimizer
 
     def train_step(self, batch, step):
+        batch = self.cast_inputs(batch)
         disc_loss = self.train_disc_step(batch)
         gen_loss = self.train_gen_step(batch)
         return {
@@ -73,9 +76,9 @@ class BaseGAN(BaseModel):
         self.disc_optimizer.zero_grad()
         real = batch['image']
         b, w, h, c = real.shape
-        real_label = torch.ones((b, 1))
+        real_label = torch.ones((b, 1), device=self.device)
         fake = self.sample(n_sample=b, cond=batch, grad=True)
-        fake_label = torch.zeros((b, 1))
+        fake_label = torch.zeros((b, 1), device=self.device)
         
         # real_loss = self.get_disc_loss(real, real_label)
         fake_loss = self.get_disc_loss(fake, fake_label)
@@ -94,7 +97,7 @@ class BaseGAN(BaseModel):
         real = batch['image']
         b, w, h, c = real.shape
         fake = self.sample(n_sample=b, cond=batch, grad=True)
-        fake_real_label = torch.ones((b, 1))
+        fake_real_label = torch.ones((b, 1), device=self.device)
         
         gen_loss = self.get_disc_loss(fake, fake_real_label)
         gen_loss.backward()

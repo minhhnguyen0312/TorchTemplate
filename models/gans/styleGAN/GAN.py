@@ -834,7 +834,6 @@ class StyleGAN2(BaseGAN):
         super(StyleGAN2, self).__init__(config, **kwargs)
     
     def initialize(self, **kwargs):
-        self.device = 'cpu'
         self.criterion = self.get_loss(self.config['loss_module'])
         gen_config = self.config['generator']
         disc_config = self.config['discriminator']
@@ -842,6 +841,7 @@ class StyleGAN2(BaseGAN):
         self.disc, self.disc_optimizer = self.build_discriminator(disc_config)
     
     def build_generator(self, config):
+        print(self.device)
         opt_config = config['optimizer']
         gen = Generator(resolution=config['resolution'],
                         structure=config['structure'],

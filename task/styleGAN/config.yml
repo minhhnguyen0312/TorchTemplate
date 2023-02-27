@@ -8,6 +8,7 @@ task:
     log_step: 100
     log_dir: "./task/gan-mnist/logs"
     save: "./task/gan-mnist/ckpts"
+  device: 'cuda'
 
 data:
   format: "mnist" # Format
