@@ -1,3 +1,4 @@
+import os
 import torch
 
 from torch.utils.data import Dataset, DataLoader
@@ -22,3 +23,17 @@ class BaseDataset(Dataset):
 class BaseInput:
     def __init__(self):
         pass
+
+class FFHQ_GAN(Dataset):
+    DIR = "/kaggle/input/ffhq-face-data-set/"
+    def __init__(self, config):
+        self.source = os.listdir(DIR)
+        
+    def __len__(self):
+        return len(self.source)
+    
+    def __getitem(self, index):
+        path = os.path.join(DIR, self.source[index])
+        image = Image.open(path).convert("RGB")
+        image_tensor = T.ToTensor()(image)
+        return image_tensor

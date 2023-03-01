@@ -384,7 +384,7 @@ class Discriminator(nn.Module):
         # register the temporary downSampler
         self.temporaryDownsampler = nn.AvgPool2d(2)
 
-    def forward(self, images_in, depth, alpha=1., labels_in=None):
+    def forward(self, images_in, depth=None, alpha=1., labels_in=None, fake=True):
         """
         :param images_in: First input: Images [mini_batch, channel, height, width].
         :param labels_in: Second input: Labels [mini_batch, label_size].
@@ -392,7 +392,13 @@ class Discriminator(nn.Module):
         :param alpha: current value of alpha for fade-in
         :return:
         """
-        
+        if depth == None:
+            depth = self.depth - 1
+
+        if not fake:
+            images_in = self._progressive_down_sampling(images_in, depth)
+
+
         assert depth < self.depth, "Requested output depth cannot be produced"
 
         if self.conditional:
@@ -431,7 +437,7 @@ class Discriminator(nn.Module):
 
                 for block in self.blocks[(self.depth - depth):]:
                     x = block(x)
-            else:
+            else: # only 1 input image, at the 0 depth
                 if self.conditional:
                     embedding_in = self.embeddings[-1](labels_in)
                     embedding_in = embedding_in.view(images_in.shape[0], -1,
@@ -446,6 +452,36 @@ class Discriminator(nn.Module):
 
         return scores_out
 
+
+    def _progressive_down_sampling(self, real_batch, depth, alpha):
+        """ Down sampling real images data.
+        Arguments:
+            images : Tensor of shape [batch_size, c, h, w]
+        Returns:
+            samples: list of Tensor
+        """
+        from torch.nn import AvgPool2d
+        from torch.nn.functional import interpolate
+
+        if self.structure == 'fixed':
+            return real_batch
+
+        # down_sample the real_batch for the given depth
+        down_sample_factor = int(np.power(2, self.depth - depth - 1))
+        prior_down_sample_factor = max(int(np.power(2, self.depth - depth)), 0)
+
+        ds_real_samples = AvgPool2d(down_sample_factor)(real_batch)
+
+        if depth > 0:
+            prior_ds_real_samples = interpolate(AvgPool2d(prior_down_sample_factor)(real_batch), scale_factor=2)
+        else:
+            prior_ds_real_samples = ds_real_samples
+
+        # real samples are a combination of ds_real_samples and prior_ds_real_samples
+        real_samples = (alpha * ds_real_samples) + ((1 - alpha) * prior_ds_real_samples)
+
+        # return the so computed real_samples
+        return real_samples
 
 class StyleGAN:
 

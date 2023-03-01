@@ -11,12 +11,12 @@ task:
   device: 'cuda'
 
 data:
-  format: "mnist" # Format
-  source: "mnist" # Path to data
+  format: "ffhq-gan" # Format
+  source: "/kaggle/input/ffhq-face-data-set/" # Path to data
   train:
-    batch_size: 16
+    batch_size: 8
     image_size: 128
-    num_workers: 4
+    num_workers: 2
     policy: default
   validation:
     batch_size: 4

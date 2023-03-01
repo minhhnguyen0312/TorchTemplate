@@ -81,8 +81,8 @@ class BaseGAN(BaseModel):
         fake_label = torch.zeros((b, 1), device=self.device)
         
         # real_loss = self.get_disc_loss(real, real_label)
-        fake_loss = self.get_disc_loss(fake, fake_label)
-        real_loss = fake_loss
+        fake_loss = self.get_disc_loss(fake, fake_label, fake=True)
+        real_loss = self.get_disc_loss(real, real_label, fake=False)
         total_loss = (real_loss + fake_loss) / 2
 
         total_loss.backward()
@@ -114,8 +114,8 @@ class BaseGAN(BaseModel):
         return fake
 
     
-    def get_disc_loss(self, x, y):
-        pred = self.disc(x, depth=0)
+    def get_disc_loss(self, x, y, **kwargs):
+        pred = self.disc(x, **kwargs)
         return self.criterion(pred, y)
     
     def eval_step(self, batch, step):

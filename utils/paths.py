@@ -9,7 +9,10 @@ def mkdir(filepath):
 
 def import_module(module: str):
     try:
-        importlib.import_module(module)
+        model_module = ".".join(module.split('.')[:-1])
+        cls = module.split('.')[-1]
+        mod = getattr(importlib.import_module(model_module), cls)
+        return mod
     except ImportError:
         raise ImportError(f"Could not import module {module}.")
 

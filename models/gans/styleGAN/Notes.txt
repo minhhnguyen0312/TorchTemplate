@@ -1,0 +1,1 @@
+Merging StyleGAN into this hierarchical seems to be far more than just ambituous.
