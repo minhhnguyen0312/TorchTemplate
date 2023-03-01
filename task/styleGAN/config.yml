@@ -27,7 +27,7 @@ model:
   loss_module: models.gans.losses.GANLoss
   generator:
     pretrain: None
-    structure: fixed
+    structure: linear
     resolution: 128
     latent_dim: 512
     dlatent_dim: 512
@@ -45,7 +45,7 @@ model:
     pretrain: None
     num_channels: 3
     resolution: 128
-    structure: fixed
+    structure: linear
     conditional: False
     n_classes: 0
     optimizer:

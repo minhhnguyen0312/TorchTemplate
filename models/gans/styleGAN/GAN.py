@@ -9,6 +9,9 @@
                  https://github.com/NVlabs/stylegan
 -------------------------------------------------
 """
+"""
+This Implementation using linear structure -> remove fixed option
+"""
 
 import copy
 import datetime
@@ -109,7 +112,8 @@ class GSynthesis(nn.Module):
                  fmap_base=8192, fmap_decay=1.0, fmap_max=512,
                  use_styles=True, const_input_layer=True, use_noise=True, nonlinearity='lrelu',
                  use_wscale=True, use_pixel_norm=False, use_instance_norm=True, blur_filter=None,
-                 structure='linear', **kwargs):
+                #  structure='linear',
+                 **kwargs):
         """
         Synthesis network used in the StyleGAN paper.
 
@@ -141,7 +145,7 @@ class GSynthesis(nn.Module):
         def nf(stage):
             return min(int(fmap_base / (2.0 ** (stage * fmap_decay))), fmap_max)
 
-        self.structure = structure
+        # self.structure = structure
 
         resolution_log2 = int(np.log2(resolution))
         assert resolution == 2 ** resolution_log2 and resolution >= 4
@@ -240,12 +244,13 @@ class Generator(nn.Module):
 
         self.conditional = conditional
         self.style_mixing_prob = style_mixing_prob
-
+        
         # Setup components.
         self.num_layers = (int(np.log2(resolution)) - 1) * 2
         self.g_mapping = GMapping(latent_size, dlatent_size, dlatent_broadcast=self.num_layers, **kwargs)
         self.g_synthesis = GSynthesis(resolution=resolution, **kwargs)
-
+        self.current_depth = self.g_synthesis.depth
+        
         if truncation_psi > 0:
             self.truncation = Truncation(avg_latent=torch.zeros(dlatent_size),
                                          max_layer=truncation_cutoff,
@@ -254,7 +259,7 @@ class Generator(nn.Module):
         else:
             self.truncation = None
 
-    def forward(self, latents_in, depth, alpha, labels_in=None):
+    def forward(self, latents_in, alpha, labels_in=None):
         """
         :param latents_in: First input: Latent vectors (Z) [mini_batch, latent_size].
         :param depth: current depth from where output is required
@@ -262,7 +267,7 @@ class Generator(nn.Module):
         :param labels_in: Second input: Conditioning labels [mini_batch, label_size].
         :return:
         """
-
+        depth = self.g_synthesis.depth
         if not self.conditional:
             if labels_in is not None:
                 warnings.warn(
@@ -275,6 +280,8 @@ class Generator(nn.Module):
         dlatents_in = self.g_mapping(latents_in)
 
         if self.training:
+            depth = self.current_depth
+
             # Update moving average of W(dlatent).
             # TODO
             if self.truncation is not None:
@@ -345,7 +352,7 @@ class Discriminator(nn.Module):
         resolution_log2 = int(np.log2(resolution))
         assert resolution == 2 ** resolution_log2 and resolution >= 4
         self.depth = resolution_log2 - 1
-
+        self.current_depth = self.depth
         act, gain = {'relu': (torch.relu, np.sqrt(2)),
                      'lrelu': (nn.LeakyReLU(negative_slope=0.2), np.sqrt(2))}[nonlinearity]
 
@@ -384,7 +391,7 @@ class Discriminator(nn.Module):
         # register the temporary downSampler
         self.temporaryDownsampler = nn.AvgPool2d(2)
 
-    def forward(self, images_in, depth=None, alpha=1., labels_in=None, fake=True):
+    def forward(self, images_in, alpha=1., labels_in=None, fake=True):
         """
         :param images_in: First input: Images [mini_batch, channel, height, width].
         :param labels_in: Second input: Labels [mini_batch, label_size].
@@ -392,8 +399,7 @@ class Discriminator(nn.Module):
         :param alpha: current value of alpha for fade-in
         :return:
         """
-        if depth == None:
-            depth = self.depth - 1
+        depth = self.current_depth
 
         if not fake:
             images_in = self._progressive_down_sampling(images_in, depth)
@@ -403,52 +409,35 @@ class Discriminator(nn.Module):
 
         if self.conditional:
             assert labels_in is not None, "Conditional Discriminator requires labels"
-        # print(embedding_in.shape, images_in.shape)
-        # exit(0)
-        # print(self.embeddings)
-        # exit(0)
-        if self.structure == 'fixed':
-            if self.conditional:
-                embedding_in = self.embeddings[0](labels_in)
-                embedding_in = embedding_in.view(images_in.shape[0], -1,
-                                                 images_in.shape[2],
-                                                 images_in.shape[3])
-                images_in = torch.cat([images_in, embedding_in], dim=1)
-            x = self.from_rgb[0](images_in)
-            for i, block in enumerate(self.blocks):
-                x = block(x)
-            scores_out = self.final_block(x)
-            
-        elif self.structure == 'linear':
-            if depth > 0:
-                if self.conditional:
-                    embedding_in = self.embeddings[self.depth -
-                                                   depth - 1](labels_in)
-                    embedding_in = embedding_in.view(images_in.shape[0], -1,
-                                                     images_in.shape[2],
-                                                     images_in.shape[3])
-                    images_in = torch.cat([images_in, embedding_in], dim=1)
-                    
-                residual = self.from_rgb[self.depth -
-                                         depth](self.temporaryDownsampler(images_in))
-                straight = self.blocks[self.depth - depth -
-                                       1](self.from_rgb[self.depth - depth - 1](images_in))
-                x = (alpha * straight) + ((1 - alpha) * residual)
 
-                for block in self.blocks[(self.depth - depth):]:
-                    x = block(x)
-            else: # only 1 input image, at the 0 depth
-                if self.conditional:
-                    embedding_in = self.embeddings[-1](labels_in)
-                    embedding_in = embedding_in.view(images_in.shape[0], -1,
-                                                     images_in.shape[2],
-                                                     images_in.shape[3])
-                    images_in = torch.cat([images_in, embedding_in], dim=1)
-                x = self.from_rgb[-1](images_in)
+        # exit(0)
+        if depth > 0:
+            if self.conditional:
+                embedding_in = self.embeddings[self.depth -
+                                                depth - 1](labels_in)
+                embedding_in = embedding_in.view(images_in.shape[0], -1,
+                                                    images_in.shape[2],
+                                                    images_in.shape[3])
+                images_in = torch.cat([images_in, embedding_in], dim=1)
+                
+            residual = self.from_rgb[self.depth -
+                                        depth](self.temporaryDownsampler(images_in))
+            straight = self.blocks[self.depth - depth -
+                                    1](self.from_rgb[self.depth - depth - 1](images_in))
+            x = (alpha * straight) + ((1 - alpha) * residual)
+
+            for block in self.blocks[(self.depth - depth):]:
+                x = block(x)
+        else: # only 1 input image, at the 0 depth
+            if self.conditional:
+                embedding_in = self.embeddings[-1](labels_in)
+                embedding_in = embedding_in.view(images_in.shape[0], -1,
+                                                    images_in.shape[2],
+                                                    images_in.shape[3])
+                images_in = torch.cat([images_in, embedding_in], dim=1)
+            x = self.from_rgb[-1](images_in)
                     
-            scores_out = self.final_block(x)
-        else:
-            raise KeyError("Unknown structure: ", self.structure)
+        scores_out = self.final_block(x)
 
         return scores_out
 
@@ -462,9 +451,6 @@ class Discriminator(nn.Module):
         """
         from torch.nn import AvgPool2d
         from torch.nn.functional import interpolate
-
-        if self.structure == 'fixed':
-            return real_batch
 
         # down_sample the real_batch for the given depth
         down_sample_factor = int(np.power(2, self.depth - depth - 1))
@@ -868,6 +854,8 @@ class StyleGAN:
 class StyleGAN2(BaseGAN):
     def __init__(self, config, **kwargs):
         super(StyleGAN2, self).__init__(config, **kwargs)
+        self.current_depth = 0
+        self.depth = config['generator']['depth']
     
     def initialize(self, **kwargs):
         self.criterion = self.get_loss(self.config['loss_module'])
@@ -880,7 +868,6 @@ class StyleGAN2(BaseGAN):
         print(self.device)
         opt_config = config['optimizer']
         gen = Generator(resolution=config['resolution'],
-                        structure=config['structure'],
                         latent_size=config['latent_dim'],
                         dlatent_size=config['dlatent_dim'],
                         conditional=config['conditional'],
@@ -893,7 +880,6 @@ class StyleGAN2(BaseGAN):
         opt_config = config['optimizer']
         disc = Discriminator(num_channels=config['num_channels'],
                              resolution=config['resolution'],
-                             structure=config['structure'],
                              conditional=config['conditional'],
                              n_classes=config['n_classes']
                             ).to(self.device)
@@ -901,11 +887,16 @@ class StyleGAN2(BaseGAN):
         return disc, optimizer
 
     def get_loss(self, module):
-        # module = module.split(".")
-        # loss_cls = module[-1]
-        # path = ".".join(module[:-1])
-        # mod = getattr(importlib.import_module(path), loss_cls)
         return nn.BCEWithLogitsLoss()
+
+    def train_one_epoch(self, data, epoch):
+        for depth in range(self.depth):
+            res = 128 #TODO: update calculation for current resolution
+            self.disc.current_depth = depth
+            self.gen.current_depth = depth
+            print("Working on depth {}".format(depth))
+            print("Current depth image resolution : {res}")
+            super().train_one_epoch(data, epoch)
 
 if __name__ == '__main__':
     print('Done.')

@@ -99,7 +99,7 @@ class BaseGAN(BaseModel):
         fake = self.sample(n_sample=b, cond=batch, grad=True)
         fake_real_label = torch.ones((b, 1), device=self.device)
         
-        gen_loss = self.get_disc_loss(fake, fake_real_label)
+        gen_loss = self.get_disc_loss(fake, fake_real_label, fake=True)
         gen_loss.backward()
         self.gen_optimizer.step()
         return gen_loss
@@ -118,5 +118,6 @@ class BaseGAN(BaseModel):
         pred = self.disc(x, **kwargs)
         return self.criterion(pred, y)
     
-    def eval_step(self, batch, step):
-        pass
+    def eval_one_epoch(self, **kwargs):
+        print("Sample are generated inside training function")
+        return
