@@ -191,29 +191,20 @@ class GSynthesis(nn.Module):
 
         assert depth < self.depth, "Requested output depth cannot be produced"
 
-        if self.structure == 'fixed':
-            x = self.init_block(dlatents_in[:, 0:2])
-            for i, block in enumerate(self.blocks):
+        x = self.init_block(dlatents_in[:, 0:2])
+
+        if depth > 0:
+            for i, block in enumerate(self.blocks[:depth - 1]):
                 x = block(x, dlatents_in[:, 2 * (i + 1):2 * (i + 2)])
-            images_out = self.to_rgb[-1](x)
-        elif self.structure == 'linear':
-            x = self.init_block(dlatents_in[:, 0:2])
 
-            if depth > 0:
-                for i, block in enumerate(self.blocks[:depth - 1]):
-                    x = block(x, dlatents_in[:, 2 * (i + 1):2 * (i + 2)])
+            residual = self.to_rgb[depth - 1](self.temporaryUpsampler(x))
+            straight = self.to_rgb[depth](self.blocks[depth - 1](x, dlatents_in[:, 2 * depth:2 * (depth + 1)]))
 
-                residual = self.to_rgb[depth - 1](self.temporaryUpsampler(x))
-                straight = self.to_rgb[depth](self.blocks[depth - 1](x, dlatents_in[:, 2 * depth:2 * (depth + 1)]))
-
-                images_out = (alpha * straight) + ((1 - alpha) * residual)
-            else:
-                images_out = self.to_rgb[0](x)
+            images_out = (alpha * straight) + ((1 - alpha) * residual)
         else:
-            raise KeyError("Unknown structure: ", self.structure)
+            images_out = self.to_rgb[0](x)
 
         return images_out
-
 
 class Generator(nn.Module):
 
@@ -259,7 +250,7 @@ class Generator(nn.Module):
         else:
             self.truncation = None
 
-    def forward(self, latents_in, alpha, labels_in=None):
+    def forward(self, latents_in, alpha=1., labels_in=None, sampling=False, **kwargs):
         """
         :param latents_in: First input: Latent vectors (Z) [mini_batch, latent_size].
         :param depth: current depth from where output is required
@@ -267,7 +258,9 @@ class Generator(nn.Module):
         :param labels_in: Second input: Conditioning labels [mini_batch, label_size].
         :return:
         """
-        depth = self.g_synthesis.depth
+        depth = self.current_depth
+        if sampling:
+            depth = self.g_synthesis.depth
         if not self.conditional:
             if labels_in is not None:
                 warnings.warn(
@@ -402,7 +395,7 @@ class Discriminator(nn.Module):
         depth = self.current_depth
 
         if not fake:
-            images_in = self._progressive_down_sampling(images_in, depth)
+            images_in = self._progressive_down_sampling(images_in, depth, alpha)
 
 
         assert depth < self.depth, "Requested output depth cannot be produced"
@@ -850,19 +843,11 @@ class StyleGAN:
 
         logger.info('Training completed.\n')
         
-
 class StyleGAN2(BaseGAN):
     def __init__(self, config, **kwargs):
         super(StyleGAN2, self).__init__(config, **kwargs)
         self.current_depth = 0
-        self.depth = config['generator']['depth']
-    
-    def initialize(self, **kwargs):
-        self.criterion = self.get_loss(self.config['loss_module'])
-        gen_config = self.config['generator']
-        disc_config = self.config['discriminator']
-        self.gen, self.gen_optimizer = self.build_generator(gen_config)
-        self.disc, self.disc_optimizer = self.build_discriminator(disc_config)
+        self.depth = int(np.log2(self.config['generator']['resolution'])) - 1
     
     def build_generator(self, config):
         print(self.device)
@@ -894,9 +879,14 @@ class StyleGAN2(BaseGAN):
             res = 128 #TODO: update calculation for current resolution
             self.disc.current_depth = depth
             self.gen.current_depth = depth
-            print("Working on depth {}".format(depth))
-            print("Current depth image resolution : {res}")
-            super().train_one_epoch(data, epoch)
+            self.gen.training=True
+            res = 2 * 2 ** (depth + 1)
+            print(f"Working on depth {depth}")
+            print(f"Current depth image resolution : {res} x {res}")
+            super().train_one_epoch(data, epoch, 
+                                    scale_factor=self.depth - depth - 1,
+                                    filename=f"sample_{epoch}_{depth}.png"
+                                    )
 
 if __name__ == '__main__':
     print('Done.')

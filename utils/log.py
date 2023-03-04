@@ -1,4 +1,5 @@
 from torch.utils.tensorboard import SummaryWriter
+import os
 
 class Writer(SummaryWriter):
     """Tensorboard Writer class
@@ -8,11 +9,13 @@ class Writer(SummaryWriter):
             'loss': self.add_scalar,
         }
     """
-    def __init__(self, metric_cfg):
-        super(Writer, self).__init__()
+    def __init__(self, logdir="", metric:dict = {}):
+        super(Writer, self).__init__(log_dir=logdir)
         self.log_step = 100
         self.cur_step = 0
-        self.register(metric_cfg)
+        if not os.path.exists(logdir):
+            os.makedirs(logdir)
+        self.register(metric)
     
     def register(self, cfg):
         self.train_metrics = {}

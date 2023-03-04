@@ -62,7 +62,7 @@ class TrainerYml(BaseTrainer):
     
     def initialize_model(self):
         self.model = build_model_from_config(self.config['model'], device=self.config['task']['device'])
-        self.model.to(self.config['task']['device'])
+        # self.model.to(self.config['task']['device'])
 
     def initialize_data(self):
         self.trn_data, self.val_data = build_data_from_config(self.config['data'])

@@ -1,6 +1,6 @@
 from re import T
 import torch
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, random_split
 from torchvision import transforms, datasets
 from utils.paths import import_module
 transform = transforms.Compose([
@@ -36,5 +36,13 @@ def build_data_from_config(config):
     else:
         mod = import_module(config['module'])
         dataset = mod(config)
-        loader = DataLoader(dataset, batch_size=config['batch_size'], num_workers=config['num_workers'])
-        return loader
+        train_set, test_set = random_split(dataset, [config['train_factor'], 1 - config['train_factor']])
+        train_loader = DataLoader(train_set, 
+                                  batch_size=config['train_batch_size'], 
+                                  num_workers=config['num_workers'],
+                                  collate_fn=mod.collate_fn)
+        test_loader = DataLoader(test_set,
+                                 batch_size=config['test_batch_size'], 
+                                 num_workers=config['num_workers'],
+                                 collate_fn=mod.collate_fn)
+        return train_loader, test_loader

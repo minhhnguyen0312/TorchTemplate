@@ -22,7 +22,7 @@ Recall: DDPM contains 2 opposite Gaussian Markov chains
     p_{\theta}(x_{0:T}) = p(x_T) * \prod(p_{\theta}(x_{t-1} | x_t))
 """
 
-class DDPM(BaseModel):
+class DDPM(BaseModel, nn.Module):
     def __init__(self, config, **kwargs):
         super(DDPM, self).__init__(config)
         self.model = UNet2DConditionModel()

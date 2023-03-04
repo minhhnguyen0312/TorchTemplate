@@ -1,33 +1,32 @@
 task:
-  name: "gan-mnist"
+  name: "styleGAN"
   categories: "generative" # [generative, predictive - involve detection, segmentation blah blah]
   metrics:
     train: ["loss"]
     eval: []
   log:
     log_step: 100
-    log_dir: "./task/gan-mnist/logs"
-    save: "./task/gan-mnist/ckpts"
+    log_dir: "./task/styleGAN/logs"
+    save: "./task/styleGAN/ckpts"
   device: 'cuda'
 
 data:
   format: "ffhq-gan" # Format
-  source: "/kaggle/input/ffhq-face-data-set/" # Path to data
-  train:
-    batch_size: 8
-    image_size: 128
-    num_workers: 2
-    policy: default
-  validation:
-    batch_size: 4
-    image_size: 128
+  module: "data.base.FFHQ_GAN"
+  source: "C:/Users/minhh/source/FFHQ" # Path to data
+  train_factor: 1.
+  train_batch_size: 8
+  test_batch_size: 16
+  image_size: 128
+  num_workers: 2
+  policy: default
 
 model:
   module: "models.gans.styleGAN.StyleGAN2" # model arch
   loss_module: models.gans.losses.GANLoss
+  pretrain: None
+  device: cuda
   generator:
-    pretrain: None
-    structure: linear
     resolution: 128
     latent_dim: 512
     dlatent_dim: 512
@@ -40,12 +39,10 @@ model:
         module: "ReduceLROnPlateau" # Lr scheduler module
         patience: 5
         factor: 0.
+  
   discriminator:
-    module: None
-    pretrain: None
     num_channels: 3
     resolution: 128
-    structure: linear
     conditional: False
     n_classes: 0
     optimizer:
@@ -55,7 +52,14 @@ model:
         module: "ReduceLROnPlateau" # Lr scheduler module
         patience: 5
         factor: 0.
+  
   log: False
   criterion: BCELoss # Model criterion
-  save: "./task/gan-mnist/ckpts/"
-  taskname: "gan-mnist"
+  save: "./task/styleGAN/ckpts"
+  taskname: "styleGAN"
+  metric:
+    train:
+      disc_loss: float
+      gen_loss: float
+    eval:
+      _: float
