@@ -1,5 +1,6 @@
 from torch.utils.tensorboard import SummaryWriter
 import os
+import time
 
 class Writer(SummaryWriter):
     """Tensorboard Writer class
@@ -10,6 +11,7 @@ class Writer(SummaryWriter):
         }
     """
     def __init__(self, logdir="", metric:dict = {}):
+        logdir = logdir + time.strftime("%dd%HH%mm", time.localtime())
         super(Writer, self).__init__(log_dir=logdir)
         self.log_step = 100
         self.cur_step = 0
