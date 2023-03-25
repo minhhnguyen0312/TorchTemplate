@@ -22,7 +22,7 @@ data:
   policy: default
 
 model:
-  module: "models.gans.styleGAN.StyleGAN2" # model arch
+  module: "models.gans.styleGAN.StyleGAN_`" # model arch
   loss_module: models.gans.losses.GANLoss
   pretrain: None
   device: cuda

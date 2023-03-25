@@ -74,5 +74,3 @@ class BaseModel:
     def on_epoch_end(self, **kwargs):
         # outputs = kwargs.pop(outputs)
         pass
-
-    

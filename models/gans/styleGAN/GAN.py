@@ -843,9 +843,9 @@ class StyleGAN:
 
         logger.info('Training completed.\n')
         
-class StyleGAN2(BaseGAN):
+class StyleGAN_(BaseGAN):
     def __init__(self, config, **kwargs):
-        super(StyleGAN2, self).__init__(config, **kwargs)
+        super(StyleGAN_, self).__init__(config, **kwargs)
         self.current_depth = 0
         self.depth = int(np.log2(self.config['generator']['resolution'])) - 1
     
