@@ -1,5 +1,5 @@
 from torch.utils.tensorboard import SummaryWriter
-
+import time
 class Writer(SummaryWriter):
     """Tensorboard Writer class
     Initialize with given metrics configuration.
@@ -38,3 +38,14 @@ class Writer(SummaryWriter):
                 ref = self.eval_metrics
             for k, v in outputs.items():
                 ref[k](k, v, self.cur_step)
+
+class Timer:
+    def __init__(self, msg=""):
+        self.msg = msg
+
+    def __enter__(self):
+        self.start = time.time()
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.end_time = time.time()
+        print(self.msg, f"Runtime: {self.end_time - self.start:.2f} seconds.")
